@@ -1,3 +1,5 @@
+const bcrypt = require("bcryptjs");
+
 const User = require("./models/User");
 const Track = require("./models/Track");
 const Playlist = require("./models/Playlist");
@@ -43,15 +45,17 @@ app.post("/api/signup", async (req, res) => {
       return res.status(400).json({ message: "User already exists" });
     }
 
+    const hashedPassword = await bcrypt.hash(password, 10);
+
     const user = new User({
       username,
       email,
-      passwordHash: password, // (we'll hash later)
+      passwordHash: hashedPassword,
     });
 
     await user.save();
 
-    res.status(201).json({ message: "User created", user });
+    res.status(201).json({ message: "User created successfully", user });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -63,7 +67,13 @@ app.post("/api/login", async (req, res) => {
 
     const user = await User.findOne({ email });
 
-    if (!user || user.passwordHash !== password) {
+    if (!user) {
+      return res.status(400).json({ message: "Invalid credentials" });
+    }
+
+    const passwordMatch = await bcrypt.compare(password, user.passwordHash);
+
+    if (!passwordMatch) {
       return res.status(400).json({ message: "Invalid credentials" });
     }
 

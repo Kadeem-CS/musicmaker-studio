@@ -7,6 +7,7 @@ import './styles/theme.css'
 
 function Root() {
   const [signedIn, setSignedIn] = useState(false)
+  const [isSignup, setIsSignup] = useState(false)
 
   if (!signedIn) {
     return (
@@ -31,16 +32,30 @@ function Root() {
 
           <h1 className="text-3xl font-bold text-white">MusicMaker Studio</h1>
           <p className="text-slate-400 text-center">
-            Sign in to create, discover, and save your music.
+            {isSignup
+              ? 'Create an account to save and manage your music.'
+              : 'Sign in to create, discover, and save your music.'}
           </p>
 
           <div className="w-full flex flex-col gap-3">
+            {isSignup && (
+              <input
+                id="username"
+                type="text"
+                placeholder="Username"
+                className="w-full px-4 py-3 rounded-xl bg-slate-800 border border-slate-700 text-white placeholder-slate-500 focus:outline-none focus:border-purple-500"
+              />
+            )}
+
             <input
+              id="email"
               type="email"
               placeholder="Email"
               className="w-full px-4 py-3 rounded-xl bg-slate-800 border border-slate-700 text-white placeholder-slate-500 focus:outline-none focus:border-purple-500"
             />
+
             <input
+              id="password"
               type="password"
               placeholder="Password"
               className="w-full px-4 py-3 rounded-xl bg-slate-800 border border-slate-700 text-white placeholder-slate-500 focus:outline-none focus:border-purple-500"
@@ -49,47 +64,67 @@ function Root() {
 
           <button
             onClick={async () => {
-              const emailInput = document.querySelector('input[type="email"]') as HTMLInputElement | null
-              const passwordInput = document.querySelector('input[type="password"]') as HTMLInputElement | null
+              const usernameInput = document.getElementById('username') as HTMLInputElement | null
+              const emailInput = document.getElementById('email') as HTMLInputElement | null
+              const passwordInput = document.getElementById('password') as HTMLInputElement | null
 
+              const username = usernameInput?.value ?? ''
               const email = emailInput?.value ?? ''
               const password = passwordInput?.value ?? ''
 
-              if (!email || !password) {
-                alert('Please enter both email and password')
+              if (!email || !password || (isSignup && !username)) {
+                alert('Please fill in all required fields')
                 return
               }
 
               try {
-                const res = await fetch('http://localhost:5000/api/login', {
+                const url = isSignup
+                  ? 'http://localhost:5000/api/signup'
+                  : 'http://localhost:5000/api/login'
+
+                const body = isSignup
+                  ? { username, email, password }
+                  : { email, password }
+
+                const res = await fetch(url, {
                   method: 'POST',
                   headers: {
                     'Content-Type': 'application/json',
                   },
-                  body: JSON.stringify({ email, password }),
+                  body: JSON.stringify(body),
                 })
 
                 const data = await res.json()
 
                 if (res.ok) {
-                  setSignedIn(true)
-                  console.log('Logged in:', data)
+                  if (isSignup) {
+                    alert('Signup successful. Please sign in.')
+                    setIsSignup(false)
+                  } else {
+                    setSignedIn(true)
+                    console.log('Logged in:', data)
+                  }
                 } else {
-                  alert(data.message || 'Login failed')
+                  alert(data.message || 'Something went wrong')
                 }
               } catch (error) {
-                console.error('Login error:', error)
+                console.error(error)
                 alert('Could not connect to backend')
               }
             }}
             className="w-full py-3 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 text-white font-semibold hover:opacity-90 transition"
           >
-            Sign In
+            {isSignup ? 'Sign Up' : 'Sign In'}
           </button>
 
           <p className="text-slate-500 text-sm">
-            Don't have an account?{' '}
-            <span className="text-purple-400 cursor-pointer hover:underline">Sign up</span>
+            {isSignup ? 'Already have an account? ' : "Don't have an account? "}
+            <span
+              className="text-purple-400 cursor-pointer hover:underline"
+              onClick={() => setIsSignup(!isSignup)}
+            >
+              {isSignup ? 'Sign in' : 'Sign up'}
+            </span>
           </p>
         </div>
       </div>
