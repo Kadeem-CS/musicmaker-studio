@@ -2,8 +2,8 @@ import { useState, useRef } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './components/ui/tabs';
 import { Button } from './components/ui/button';
 import { Input } from './components/ui/input';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from './components/ui/dialog';
-import { Save, Music2, Library } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from './components/ui/dialog';
+import { Save, Music2, Library, Compass } from 'lucide-react';
 import { AudioEngine } from './components/audio-engine';
 import { BeatMaker } from './components/beat-maker';
 import { PianoKeyboard } from './components/piano-keyboard';
@@ -21,7 +21,6 @@ export default function App() {
 
   const saveComposition = () => {
     if (!compositionName.trim()) return;
-
     const composition: SavedComposition = {
       id: Date.now().toString(),
       name: compositionName,
@@ -30,12 +29,10 @@ export default function App() {
       tempo,
       createdAt: Date.now(),
     };
-
     const saved = localStorage.getItem('musicCompositions');
     const compositions = saved ? JSON.parse(saved) : [];
     compositions.unshift(composition);
     localStorage.setItem('musicCompositions', JSON.stringify(compositions));
-
     setCompositionName('');
     setSaveDialogOpen(false);
     setRefreshLibrary(prev => prev + 1);
@@ -43,12 +40,8 @@ export default function App() {
   };
 
   const loadComposition = (composition: SavedComposition) => {
-    if (composition.beatPattern) {
-      setBeatPattern(composition.beatPattern);
-    }
-    if (composition.pianoRecording) {
-      setPianoRecording(composition.pianoRecording);
-    }
+    if (composition.beatPattern) setBeatPattern(composition.beatPattern);
+    if (composition.pianoRecording) setPianoRecording(composition.pianoRecording);
     setTempo(composition.tempo);
     setActiveTab('create');
   };
@@ -56,7 +49,6 @@ export default function App() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-purple-950 to-slate-950">
       <div className="container mx-auto px-4 py-8">
-        {/* Header */}
         <div className="mb-8">
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-3">
@@ -68,7 +60,6 @@ export default function App() {
                 <p className="text-slate-400">Create and compose your music</p>
               </div>
             </div>
-
             <Dialog open={saveDialogOpen} onOpenChange={setSaveDialogOpen}>
               <DialogTrigger asChild>
                 <div>
@@ -89,11 +80,7 @@ export default function App() {
                     onChange={(e) => setCompositionName(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && saveComposition()}
                   />
-                  <Button 
-                    onClick={saveComposition} 
-                    className="w-full"
-                    disabled={!compositionName.trim()}
-                  >
+                  <Button onClick={saveComposition} className="w-full" disabled={!compositionName.trim()}>
                     Save
                   </Button>
                 </div>
@@ -102,9 +89,8 @@ export default function App() {
           </div>
         </div>
 
-        {/* Main Content */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full max-w-md grid-cols-3 bg-slate-900/50">
+          <TabsList className="grid w-full max-w-md grid-cols-4 bg-slate-900/50">
             <TabsTrigger value="create" className="data-[state=active]:bg-purple-600">
               <Music2 className="size-4 mr-2" />
               Create
@@ -117,19 +103,19 @@ export default function App() {
               <Library className="size-4 mr-2" />
               Library
             </TabsTrigger>
+            <TabsTrigger value="discover" className="data-[state=active]:bg-purple-600">
+              <Compass className="size-4 mr-2" />
+              Discover
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="create" className="space-y-6">
             <div className="bg-slate-900/50 backdrop-blur-sm border border-slate-800 rounded-xl p-6">
               <h2 className="text-2xl font-bold text-white mb-4">Beat Maker</h2>
-              <p className="text-slate-400 mb-6">
-                Create rhythmic patterns by clicking on the grid. Each row represents a different drum sound.
-              </p>
-              <BeatMaker 
+              <p className="text-slate-400 mb-6">Create rhythmic patterns by clicking on the grid.</p>
+              <BeatMaker
                 audioEngine={audioEngineRef.current}
-                onPatternChange={(pattern) => {
-                  setBeatPattern(pattern);
-                }}
+                onPatternChange={(pattern) => setBeatPattern(pattern)}
                 initialPattern={beatPattern}
                 initialTempo={tempo}
               />
@@ -139,14 +125,10 @@ export default function App() {
           <TabsContent value="piano" className="space-y-6">
             <div className="bg-slate-900/50 backdrop-blur-sm border border-slate-800 rounded-xl p-6">
               <h2 className="text-2xl font-bold text-white mb-4">Piano Keyboard</h2>
-              <p className="text-slate-400 mb-6">
-                Click the keys to play notes. Record your melodies and play them back.
-              </p>
-              <PianoKeyboard 
+              <p className="text-slate-400 mb-6">Click the keys to play notes and record melodies.</p>
+              <PianoKeyboard
                 audioEngine={audioEngineRef.current}
-                onRecordingChange={(recording) => {
-                  setPianoRecording(recording);
-                }}
+                onRecordingChange={(recording) => setPianoRecording(recording)}
                 initialRecording={pianoRecording}
               />
             </div>
@@ -155,18 +137,16 @@ export default function App() {
           <TabsContent value="library" className="space-y-6">
             <div className="bg-slate-900/50 backdrop-blur-sm border border-slate-800 rounded-xl p-6">
               <h2 className="text-2xl font-bold text-white mb-4">Music Library</h2>
-              <p className="text-slate-400 mb-6">
-                Browse and play your saved compositions.
-              </p>
-              <MusicLibrary 
+              <p className="text-slate-400 mb-6">Browse and play your saved compositions.</p>
+              <MusicLibrary
                 key={refreshLibrary}
                 audioEngine={audioEngineRef.current}
                 onLoad={loadComposition}
               />
             </div>
           </TabsContent>
-      <TabsContent value="discover" className="space-y-6">
-            {/* Featured */}
+
+          <TabsContent value="discover" className="space-y-6">
             <div className="bg-slate-900/50 backdrop-blur-sm border border-slate-800 rounded-xl p-6">
               <h2 className="text-2xl font-bold text-white mb-4">Featured Today</h2>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -189,7 +169,6 @@ export default function App() {
               </div>
             </div>
 
-            {/* Trending */}
             <div className="bg-slate-900/50 backdrop-blur-sm border border-slate-800 rounded-xl p-6">
               <h2 className="text-2xl font-bold text-white mb-4">Trending Tracks</h2>
               <div className="flex flex-col gap-3">
@@ -215,7 +194,6 @@ export default function App() {
               </div>
             </div>
 
-            {/* Playlists */}
             <div className="bg-slate-900/50 backdrop-blur-sm border border-slate-800 rounded-xl p-6">
               <h2 className="text-2xl font-bold text-white mb-4">Popular Playlists</h2>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
