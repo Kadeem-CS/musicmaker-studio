@@ -17,6 +17,27 @@ const PORT = 5000;
 app.use(cors());
 app.use(express.json());
 
+const Composition = require("./models/Composition");
+
+app.post("/api/compositions", async (req, res) => {
+  try {
+    const composition = new Composition(req.body);
+    await composition.save();
+    res.status(201).json(composition);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.get("/api/compositions/public", async (req, res) => {
+  try {
+    const compositions = await Composition.find({ visibility: "public" });
+    res.json(compositions);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 mongoose
   .connect(process.env.MONGODB_URI)
   .then(() => console.log("MongoDB connected"))
@@ -132,4 +153,18 @@ app.get("/api/playlists", async (req, res) => {
 
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
+});
+
+const Composition = require("./models/Composition");
+
+app.get("/api/compositions/public", async (req, res) => {
+  try {
+    const compositions = await Composition.find({
+      visibility: "public",
+    }).sort({ createdAt: -1 });
+
+    res.json(compositions);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 });
