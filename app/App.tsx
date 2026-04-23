@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './components/ui/tabs';
 import { Button } from './components/ui/button';
 import { Input } from './components/ui/input';
@@ -32,6 +32,7 @@ const playlists = [
 
 export default function App() {
   const audioEngineRef = useRef<AudioEngine>(new AudioEngine());
+
   const [activeTab, setActiveTab] = useState('create');
   const [beatPattern, setBeatPattern] = useState<boolean[][]>([]);
   const [pianoRecording, setPianoRecording] = useState<Array<{ note: string; time: number }>>([]);
@@ -41,26 +42,63 @@ export default function App() {
   const [refreshLibrary, setRefreshLibrary] = useState(0);
   const [discoverSearch, setDiscoverSearch] = useState('');
   const [librarySearch, setLibrarySearch] = useState('');
+  const [visibility, setVisibility] = useState<'private' | 'public'>('private');
+  const [publicCompositions, setPublicCompositions] = useState<any[]>([]);
 
-  const saveComposition = () => {
-    if (!compositionName.trim()) return;
-    const composition: SavedComposition = {
-      id: Date.now().toString(),
-      name: compositionName,
-      beatPattern: beatPattern.length > 0 ? beatPattern : undefined,
-      pianoRecording: pianoRecording.length > 0 ? pianoRecording : undefined,
+  useEffect(() => {
+  const fetchPublic = async () => {
+    try {
+      const res = await fetch("http://localhost:5000/api/compositions/public");
+      const data = await res.json();
+      setPublicCompositions(data);
+    } catch (err) {
+      console.error("Error fetching public compositions:", err);
+    }
+  };
+
+  fetchPublic();
+}, []);
+
+const saveComposition = async () => {
+  try {
+    const composition = {
+      id: Date.now(),
+      title: compositionName,
+      visibility,
+      beatPattern,
+      pianoRecording,
       tempo,
-      createdAt: Date.now(),
     };
+
+    const response = await fetch('http://localhost:5000/api/compositions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(composition),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Save failed: ${errorText}`);
+    }
+
+    await response.json();
+
     const saved = localStorage.getItem('musicCompositions');
     const compositions = saved ? JSON.parse(saved) : [];
     compositions.unshift(composition);
     localStorage.setItem('musicCompositions', JSON.stringify(compositions));
+
     setCompositionName('');
     setSaveDialogOpen(false);
-    setRefreshLibrary(prev => prev + 1);
+    setRefreshLibrary((prev) => prev + 1);
     setActiveTab('library');
-  };
+  } catch (error) {
+    console.error('Error saving composition:', error);
+    alert('Saving failed. Check console for details.');
+  }
+};
 
   const loadComposition = (composition: SavedComposition) => {
     if (composition.beatPattern) setBeatPattern(composition.beatPattern);
@@ -70,14 +108,24 @@ export default function App() {
   };
 
   const q = discoverSearch.toLowerCase();
-  const filteredFeatured = featuredTracks.filter(t =>
-    t.title.toLowerCase().includes(q) || t.artist.toLowerCase().includes(q) || t.genre.toLowerCase().includes(q)
+  const filteredFeatured = featuredTracks.filter(
+    (t) =>
+      t.title.toLowerCase().includes(q) ||
+      t.artist.toLowerCase().includes(q) ||
+      t.genre.toLowerCase().includes(q)
   );
-  const filteredTrending = trendingTracks.filter(t =>
-    t.title.toLowerCase().includes(q) || t.artist.toLowerCase().includes(q) || t.genre.toLowerCase().includes(q)
+
+  const filteredTrending = trendingTracks.filter(
+    (t) =>
+      t.title.toLowerCase().includes(q) ||
+      t.artist.toLowerCase().includes(q) ||
+      t.genre.toLowerCase().includes(q)
   );
-  const filteredPlaylists = playlists.filter(p =>
-    p.name.toLowerCase().includes(q) || p.genre.toLowerCase().includes(q)
+
+  const filteredPlaylists = playlists.filter(
+    (p) =>
+      p.name.toLowerCase().includes(q) ||
+      p.genre.toLowerCase().includes(q)
   );
 
   return (
@@ -97,28 +145,47 @@ export default function App() {
             <Dialog open={saveDialogOpen} onOpenChange={setSaveDialogOpen}>
               <DialogTrigger asChild>
                 <div>
-                  <Button size="lg" className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700">
-                    <Save className="size-5 mr-2" />
-                    Save Composition
-                  </Button>
-                </div>
-              </DialogTrigger>
-              <DialogContent aria-describedby={undefined}>
-                <DialogHeader>
-                  <DialogTitle>Save Your Composition</DialogTitle>
-                </DialogHeader>
-                <div className="space-y-4 pt-4">
-                  <Input
-                    placeholder="Enter composition name..."
-                    value={compositionName}
-                    onChange={(e) => setCompositionName(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && saveComposition()}
-                  />
-                  <Button onClick={saveComposition} className="w-full" disabled={!compositionName.trim()}>
-                    Save
-                  </Button>
-                </div>
-              </DialogContent>
+<Button
+  size="lg"
+  className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
+>
+  <Save className="size-5 mr-2" />
+  Save Composition
+</Button>
+</div>
+</DialogTrigger>
+
+<DialogContent aria-describedby={undefined}>
+  <DialogHeader>
+    <DialogTitle>Save Your Composition</DialogTitle>
+  </DialogHeader>
+
+  <div className="space-y-4 pt-4">
+    <Input
+      placeholder="Enter composition name..."
+      value={compositionName}
+      onChange={(e) => setCompositionName(e.target.value)}
+      onKeyDown={(e) => e.key === "Enter" && saveComposition()}
+    />
+
+<select
+  value={visibility}
+  onChange={(e) => setVisibility(e.target.value as 'private' | 'public')}
+  className="w-full rounded-md border p-2"
+>
+      <option value="private">Private</option>
+      <option value="public">Public</option>
+    </select>
+
+    <Button
+      onClick={saveComposition}
+      className="w-full"
+      disabled={!compositionName.trim()}
+    >
+      Save
+    </Button>
+  </div>
+</DialogContent>
             </Dialog>
           </div>
         </div>
@@ -201,6 +268,38 @@ export default function App() {
                 className="w-full pl-12 pr-4 py-4 rounded-xl bg-slate-900/80 border border-slate-700 text-white placeholder-slate-500 focus:outline-none focus:border-purple-500 text-lg"
               />
             </div>
+            {/* 🔥 Community compositions */}
+<div className="space-y-4">
+  <h2 className="text-xl font-semibold text-white">
+    Community Compositions
+  </h2>
+
+  {publicCompositions.length === 0 ? (
+    <p className="text-slate-400">No public compositions yet</p>
+  ) : (
+    <div className="grid gap-4">
+      {publicCompositions.map((comp) => (
+        <div key={comp._id} className="bg-slate-800 p-4 rounded-xl">
+          <h3 className="text-white font-semibold">{comp.title}</h3>
+
+          <div className="text-sm text-slate-400 mt-1">
+            Tempo: {comp.tempo} BPM
+          </div>
+
+          <div className="text-xs text-purple-400 mt-1">
+            {comp.visibility}
+          </div>
+
+          {comp.pianoRecording?.length > 0 && (
+            <div className="text-xs text-purple-400">
+              Piano ({comp.pianoRecording.length} notes)
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
+  )}
+</div>
 
             {filteredFeatured.length > 0 && (
               <div className="bg-slate-900/50 backdrop-blur-sm border border-slate-800 rounded-xl p-6">

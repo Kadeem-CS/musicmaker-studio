@@ -4,6 +4,7 @@ import App from './app/App'
 import './styles/index.css'
 import './styles/tailwind.css'
 import './styles/theme.css'
+import './styles/fonts.css'
 
 function Root() {
   const [signedIn, setSignedIn] = useState(false)
