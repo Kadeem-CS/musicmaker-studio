@@ -17,9 +17,10 @@ export interface SavedComposition {
 interface MusicLibraryProps {
   audioEngine: AudioEngine;
   onLoad?: (composition: SavedComposition) => void;
+  searchQuery?: string;
 }
 
-export function MusicLibrary({ audioEngine, onLoad }: MusicLibraryProps) {
+export function MusicLibrary({ audioEngine, onLoad, searchQuery = '' }: MusicLibraryProps) {
   const [compositions, setCompositions] = useState<SavedComposition[]>([]);
   const [playingComposition, setPlayingComposition] = useState<SavedComposition | null>(null);
 
@@ -42,12 +43,9 @@ export function MusicLibrary({ audioEngine, onLoad }: MusicLibraryProps) {
 
   const playComposition = (composition: SavedComposition) => {
     audioEngine.resume();
-    
-    // Play beat pattern
     if (composition.beatPattern && composition.beatPattern.length > 0 && composition.beatPattern[0]) {
       const stepDuration = (60 / composition.tempo / 4) * 1000;
       const steps = composition.beatPattern[0].length;
-      
       for (let step = 0; step < steps; step++) {
         composition.beatPattern.forEach((row, instrumentIndex) => {
           if (row[step]) {
@@ -59,8 +57,6 @@ export function MusicLibrary({ audioEngine, onLoad }: MusicLibraryProps) {
         });
       }
     }
-
-    // Play piano recording
     if (composition.pianoRecording) {
       const NOTE_FREQUENCIES: { [key: string]: number } = {
         'C4': 261.63, 'C#4': 277.18, 'D4': 293.66, 'D#4': 311.13,
@@ -71,13 +67,10 @@ export function MusicLibrary({ audioEngine, onLoad }: MusicLibraryProps) {
         'G#5': 830.61, 'A5': 880.00, 'A#5': 932.33, 'B5': 987.77,
         'C6': 1046.50,
       };
-
       composition.pianoRecording.forEach((note) => {
         setTimeout(() => {
           const frequency = NOTE_FREQUENCIES[note.note];
-          if (frequency) {
-            audioEngine.playNote(frequency);
-          }
+          if (frequency) audioEngine.playNote(frequency);
         }, note.time);
       });
     }
@@ -85,63 +78,61 @@ export function MusicLibrary({ audioEngine, onLoad }: MusicLibraryProps) {
 
   const formatDate = (timestamp: number) => {
     return new Date(timestamp).toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
+      month: 'short', day: 'numeric', year: 'numeric',
+      hour: '2-digit', minute: '2-digit'
     });
   };
 
+  const filteredCompositions = compositions.filter(c =>
+    c.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   return (
     <div className="space-y-6">
-      {/* Now Playing Section */}
       {playingComposition && (
         <div>
           <h3 className="text-xl font-semibold text-white mb-4">Now Playing</h3>
-          <MusicPlayer 
-            composition={playingComposition} 
+          <MusicPlayer
+            composition={playingComposition}
             audioEngine={audioEngine}
             onClose={() => setPlayingComposition(null)}
           />
         </div>
       )}
 
-      {/* Compositions List */}
       <div>
         <h3 className="text-xl font-semibold text-white mb-4">
           {playingComposition ? 'Your Compositions' : 'Music Library'}
         </h3>
-        
+
         {compositions.length === 0 ? (
           <Card className="p-12 text-center">
             <Music className="size-16 mx-auto mb-4 text-slate-400" />
             <h3 className="text-xl mb-2">No saved compositions yet</h3>
-            <p className="text-slate-500">
-              Create and save your first composition to see it here
-            </p>
+            <p className="text-slate-500">Create and save your first composition to see it here</p>
+          </Card>
+        ) : filteredCompositions.length === 0 ? (
+          <Card className="p-12 text-center">
+            <Music className="size-16 mx-auto mb-4 text-slate-400" />
+            <h3 className="text-xl mb-2">No results for "{searchQuery}"</h3>
+            <p className="text-slate-500">Try searching for a different composition name</p>
           </Card>
         ) : (
           <div className="grid gap-4">
-            {compositions.map((composition) => (
+            {filteredCompositions.map((composition) => (
               <Card key={composition.id} className="p-6">
                 <div className="flex items-center justify-between">
                   <div className="flex-1">
                     <h3 className="text-lg font-semibold mb-1">{composition.name}</h3>
                     <div className="flex gap-4 text-sm text-slate-500">
                       <span>Tempo: {composition.tempo} BPM</span>
-                      {composition.beatPattern && (
-                        <span>• Beat Pattern</span>
-                      )}
+                      {composition.beatPattern && <span>• Beat Pattern</span>}
                       {composition.pianoRecording && (
                         <span>• Piano Recording ({composition.pianoRecording.length} notes)</span>
                       )}
                     </div>
-                    <p className="text-xs text-slate-400 mt-1">
-                      {formatDate(composition.createdAt)}
-                    </p>
+                    <p className="text-xs text-slate-400 mt-1">{formatDate(composition.createdAt)}</p>
                   </div>
-                  
                   <div className="flex gap-2">
                     <Button
                       onClick={() => setPlayingComposition(composition)}
@@ -151,23 +142,13 @@ export function MusicLibrary({ audioEngine, onLoad }: MusicLibraryProps) {
                       <Play className="size-5 mr-2" />
                       Listen
                     </Button>
-                    
                     {onLoad && (
-                      <Button
-                        onClick={() => onLoad(composition)}
-                        variant="outline"
-                        size="lg"
-                      >
+                      <Button onClick={() => onLoad(composition)} variant="outline" size="lg">
                         <Edit className="size-5 mr-2" />
                         Edit
                       </Button>
                     )}
-                    
-                    <Button
-                      onClick={() => deleteComposition(composition.id)}
-                      variant="outline"
-                      size="lg"
-                    >
+                    <Button onClick={() => deleteComposition(composition.id)} variant="outline" size="lg">
                       <Trash2 className="size-5 text-red-500" />
                     </Button>
                   </div>
