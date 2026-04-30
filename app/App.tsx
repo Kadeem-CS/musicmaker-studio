@@ -10,8 +10,30 @@ import { PianoKeyboard } from './components/piano-keyboard';
 import { MusicLibrary, SavedComposition } from './components/music-library';
 import SongUpload from './components/SongUpload';
 
+const featuredTracks = [
+  { title: 'Neon Nights', artist: 'DJ Pulse', genre: 'Electronic', color: 'from-purple-600 to-pink-600' },
+  { title: 'Midnight Groove', artist: 'Luna Beats', genre: 'Lo-Fi', color: 'from-blue-600 to-purple-600' },
+  { title: 'Solar Drift', artist: 'Wavecraft', genre: 'Ambient', color: 'from-pink-600 to-orange-500' },
+];
+
+const trendingTracks = [
+  { rank: 1, title: 'Cosmic Rain', artist: 'Starfield', genre: 'Electronic', duration: '3:42' },
+  { rank: 2, title: 'Deep Blue', artist: 'OceanWave', genre: 'Ambient', duration: '4:15' },
+  { rank: 3, title: 'Fire Walk', artist: 'Ember Fox', genre: 'Hip-Hop', duration: '2:58' },
+  { rank: 4, title: 'Crystal Skies', artist: 'Aura', genre: 'Lo-Fi', duration: '5:01' },
+  { rank: 5, title: 'Rhythm Storm', artist: 'DJ Pulse', genre: 'Electronic', duration: '3:27' },
+];
+
+const playlists = [
+  { name: 'Chill Vibes', tracks: 24, genre: 'Lo-Fi', color: 'from-blue-500 to-cyan-500' },
+  { name: 'Late Night', tracks: 18, genre: 'Ambient', color: 'from-purple-500 to-indigo-500' },
+  { name: 'Energy Boost', tracks: 31, genre: 'Electronic', color: 'from-pink-500 to-rose-500' },
+  { name: 'Focus Flow', tracks: 15, genre: 'Lo-Fi', color: 'from-orange-500 to-yellow-500' },
+];
+
 export default function App() {
   const audioEngineRef = useRef<AudioEngine>(new AudioEngine());
+
   const [activeTab, setActiveTab] = useState('create');
   
   // State for the studio data
@@ -24,6 +46,10 @@ export default function App() {
   const [compositionName, setCompositionName] = useState('');
   const [saveDialogOpen, setSaveDialogOpen] = useState(false);
   const [refreshLibrary, setRefreshLibrary] = useState(0);
+  const [discoverSearch, setDiscoverSearch] = useState('');
+  const [librarySearch, setLibrarySearch] = useState('');
+  const [visibility, setVisibility] = useState<'private' | 'public'>('private');
+  const [publicCompositions, setPublicCompositions] = useState<any[]>([]);
 
   // Sync volume with engine on mount or change
   const handleVolumeChange = (value: number) => {
@@ -35,14 +61,34 @@ export default function App() {
   const saveComposition = () => {
     if (!compositionName.trim()) return;
 
-    const composition: SavedComposition = {
-      id: Date.now().toString(),
-      name: compositionName,
-      beatPattern: beatPattern.length > 0 ? beatPattern : undefined,
-      pianoRecording: pianoRecording.length > 0 ? pianoRecording : undefined,
+  fetchPublic();
+}, []);
+
+const saveComposition = async () => {
+  try {
+    const composition = {
+      id: Date.now(),
+      title: compositionName,
+      visibility,
+      beatPattern,
+      pianoRecording,
       tempo,
-      createdAt: Date.now(),
     };
+
+    const response = await fetch('http://localhost:5000/api/compositions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(composition),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Save failed: ${errorText}`);
+    }
+
+    await response.json();
 
     const saved = localStorage.getItem('musicCompositions');
     const compositions = saved ? JSON.parse(saved) : [];
@@ -51,9 +97,13 @@ export default function App() {
 
     setCompositionName('');
     setSaveDialogOpen(false);
-    setRefreshLibrary(prev => prev + 1);
+    setRefreshLibrary((prev) => prev + 1);
     setActiveTab('library');
-  };
+  } catch (error) {
+    console.error('Error saving composition:', error);
+    alert('Saving failed. Check console for details.');
+  }
+};
 
   const loadComposition = (composition: SavedComposition) => {
     if (composition.beatPattern) setBeatPattern(composition.beatPattern);
@@ -61,6 +111,27 @@ export default function App() {
     setTempo(composition.tempo);
     setActiveTab('create');
   };
+
+  const q = discoverSearch.toLowerCase();
+  const filteredFeatured = featuredTracks.filter(
+    (t) =>
+      t.title.toLowerCase().includes(q) ||
+      t.artist.toLowerCase().includes(q) ||
+      t.genre.toLowerCase().includes(q)
+  );
+
+  const filteredTrending = trendingTracks.filter(
+    (t) =>
+      t.title.toLowerCase().includes(q) ||
+      t.artist.toLowerCase().includes(q) ||
+      t.genre.toLowerCase().includes(q)
+  );
+
+  const filteredPlaylists = playlists.filter(
+    (p) =>
+      p.name.toLowerCase().includes(q) ||
+      p.genre.toLowerCase().includes(q)
+  );
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-purple-950 to-slate-950 text-white">
@@ -204,6 +275,7 @@ export default function App() {
                 key={refreshLibrary}
                 audioEngine={audioEngineRef.current}
                 onLoad={loadComposition}
+                searchQuery={librarySearch}
               />
             </div>
           </TabsContent>

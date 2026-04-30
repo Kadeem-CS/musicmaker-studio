@@ -7,12 +7,21 @@ import { AudioEngine } from './audio-engine';
 import { MusicPlayer } from './music-player';
 
 export interface SavedComposition {
-  id: string;
-  name: string;
+  id: string | number;
+  title: string;
+  visibility?: 'private' | 'public';
   beatPattern?: boolean[][];
   pianoRecording?: Array<{ note: string; time: number }>;
   tempo: number;
-  createdAt: number;
+  createdAt?: number;
+}
+
+interface UploadedTrack {
+  _id: string;
+  title: string;
+  artist: string;
+  fileUrl: string;
+  createdAt: string;
 }
 
 interface UploadedTrack {
@@ -26,9 +35,10 @@ interface UploadedTrack {
 interface MusicLibraryProps {
   audioEngine: AudioEngine;
   onLoad?: (composition: SavedComposition) => void;
+  searchQuery?: string;
 }
 
-export function MusicLibrary({ audioEngine, onLoad }: MusicLibraryProps) {
+export function MusicLibrary({ audioEngine, onLoad, searchQuery = '' }: MusicLibraryProps) {
   const [compositions, setCompositions] = useState<SavedComposition[]>([]);
   const [uploadedTracks, setUploadedTracks] = useState<UploadedTrack[]>([]);
   const [playingComposition, setPlayingComposition] = useState<SavedComposition | null>(null);

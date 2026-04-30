@@ -34,10 +34,38 @@ app.use(cors({
 app.use(express.json());
 app.use('/uploads', express.static('uploads'));
 
+<<<<<<< HEAD
 // --- 3. DATABASE ---
 mongoose.connect(process.env.MONGODB_URI)
   .then(() => console.log("✅ MongoDB connected successfully"))
   .catch((err) => console.log("❌ MongoDB Error:", err));
+=======
+const Composition = require("./models/Composition");
+
+app.post("/api/compositions", async (req, res) => {
+  try {
+    const composition = new Composition(req.body);
+    await composition.save();
+    res.status(201).json(composition);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.get("/api/compositions/public", async (req, res) => {
+  try {
+    const compositions = await Composition.find({ visibility: "public" });
+    res.json(compositions);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+mongoose
+  .connect(process.env.MONGODB_URI)
+  .then(() => console.log("MongoDB connected"))
+  .catch((err) => console.log(err));
+>>>>>>> 9716b3a6ab76a078ff3c68d03c90ccb32a9b8df6
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => { cb(null, 'uploads/'); },
@@ -102,5 +130,23 @@ app.delete("/api/tracks/:id", async (req, res) => {
 
 // --- 6. START ---
 app.listen(PORT, () => {
+<<<<<<< HEAD
   console.log(`🚀 STUDIO BACKEND LIVE AT: http://localhost:${PORT}`);
+=======
+  console.log(`Server running on http://localhost:${PORT}`);
+});
+
+const Composition = require("./models/Composition");
+
+app.get("/api/compositions/public", async (req, res) => {
+  try {
+    const compositions = await Composition.find({
+      visibility: "public",
+    }).sort({ createdAt: -1 });
+
+    res.json(compositions);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+>>>>>>> 9716b3a6ab76a078ff3c68d03c90ccb32a9b8df6
 });
