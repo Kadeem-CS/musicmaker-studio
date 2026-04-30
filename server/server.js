@@ -1,15 +1,19 @@
-const bcrypt = require("bcryptjs");
-const User = require("./models/User");
-const Track = require("./models/Track");
-const Playlist = require("./models/Playlist");
 const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
 const dotenv = require("dotenv");
 const multer = require('multer');
 const path = require('path');
+const bcrypt = require("bcryptjs");
 
-dotenv.config({ path: ".env.local" });
+// Models - ensure these paths are correct for your folder structure
+const User = require("./models/User");
+const Track = require("./models/Track");
+const Playlist = require("./models/Playlist");
+
+// --- THE CRITICAL FIX ---
+// This tells Node: "Look at the folder I'm in, go up one, and find .env.local"
+dotenv.config({ path: path.join(__dirname, '../.env.local') });
 
 const app = express();
 const PORT = 5001;
@@ -20,7 +24,7 @@ app.use((req, res, next) => {
   next();
 });
 
-// --- 2. MIDDLEWARE (FIXED CORS FOR PORT 5174) ---
+// --- 2. MIDDLEWARE ---
 app.use(cors({
   origin: [
     'http://localhost:5173', 
@@ -32,48 +36,22 @@ app.use(cors({
   credentials: true
 }));
 app.use(express.json());
-app.use('/uploads', express.static('uploads'));
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-<<<<<<< HEAD
-// --- 3. DATABASE ---
+// --- 3. DATABASE CONNECTION ---
+// Now process.env.MONGODB_URI will actually be defined!
 mongoose.connect(process.env.MONGODB_URI)
   .then(() => console.log("✅ MongoDB connected successfully"))
   .catch((err) => console.log("❌ MongoDB Error:", err));
-=======
-const Composition = require("./models/Composition");
 
-app.post("/api/compositions", async (req, res) => {
-  try {
-    const composition = new Composition(req.body);
-    await composition.save();
-    res.status(201).json(composition);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-app.get("/api/compositions/public", async (req, res) => {
-  try {
-    const compositions = await Composition.find({ visibility: "public" });
-    res.json(compositions);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-mongoose
-  .connect(process.env.MONGODB_URI)
-  .then(() => console.log("MongoDB connected"))
-  .catch((err) => console.log(err));
->>>>>>> 9716b3a6ab76a078ff3c68d03c90ccb32a9b8df6
-
+// --- 4. MULTER CONFIG ---
 const storage = multer.diskStorage({
-  destination: (req, file, cb) => { cb(null, 'uploads/'); },
+  destination: (req, file, cb) => { cb(null, path.join(__dirname, 'uploads/')); },
   filename: (req, file, cb) => { cb(null, Date.now() + path.extname(file.originalname)); }
 });
 const upload = multer({ storage: storage });
 
-// --- 4. AUTH ROUTES ---
+// --- 5. AUTH ROUTES ---
 app.post("/api/signup", async (req, res) => {
   try {
     const { username, email, password } = req.body;
@@ -87,7 +65,7 @@ app.post("/api/signup", async (req, res) => {
 });
 
 app.post("/api/login", async (req, res) => {
-  console.log("🔑 Login logic starting for:", req.body.email);
+  console.log("🔑 Login attempt for:", req.body.email);
   try {
     const { email, password } = req.body;
     const user = await User.findOne({ email });
@@ -98,7 +76,7 @@ app.post("/api/login", async (req, res) => {
   } catch (error) { res.status(500).json({ error: error.message }); }
 });
 
-// --- 5. TRACK & UPLOAD ROUTES ---
+// --- 6. TRACK & UPLOAD ROUTES ---
 app.get("/api/tracks", async (req, res) => {
   try {
     const tracks = await Track.find();
@@ -128,25 +106,7 @@ app.delete("/api/tracks/:id", async (req, res) => {
   } catch (error) { res.status(500).json({ error: error.message }); }
 });
 
-// --- 6. START ---
+// --- 7. START ---
 app.listen(PORT, () => {
-<<<<<<< HEAD
   console.log(`🚀 STUDIO BACKEND LIVE AT: http://localhost:${PORT}`);
-=======
-  console.log(`Server running on http://localhost:${PORT}`);
-});
-
-const Composition = require("./models/Composition");
-
-app.get("/api/compositions/public", async (req, res) => {
-  try {
-    const compositions = await Composition.find({
-      visibility: "public",
-    }).sort({ createdAt: -1 });
-
-    res.json(compositions);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
->>>>>>> 9716b3a6ab76a078ff3c68d03c90ccb32a9b8df6
 });

@@ -10,7 +10,7 @@ function Root() {
   const [signedIn, setSignedIn] = useState(false)
   const [isSignup, setIsSignup] = useState(false)
   
-  // React State for form inputs
+  // React State for form inputs (more reliable than getElementById)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [username, setUsername] = useState('')
@@ -37,7 +37,7 @@ function Root() {
                 placeholder="Username"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                className="w-full px-4 py-3 rounded-xl bg-slate-800 border border-slate-700 text-white outline-none focus:border-purple-500"
+                className="w-full px-4 py-3 rounded-xl bg-slate-800 border border-slate-700 text-white outline-none focus:border-purple-500 transition-colors"
               />
             )}
 
@@ -46,7 +46,7 @@ function Root() {
               placeholder="Email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-4 py-3 rounded-xl bg-slate-800 border border-slate-700 text-white outline-none focus:border-purple-500"
+              className="w-full px-4 py-3 rounded-xl bg-slate-800 border border-slate-700 text-white outline-none focus:border-purple-500 transition-colors"
             />
 
             <input
@@ -54,7 +54,7 @@ function Root() {
               placeholder="Password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-4 py-3 rounded-xl bg-slate-800 border border-slate-700 text-white outline-none focus:border-purple-500"
+              className="w-full px-4 py-3 rounded-xl bg-slate-800 border border-slate-700 text-white outline-none focus:border-purple-500 transition-colors"
             />
           </div>
 
@@ -66,11 +66,8 @@ function Root() {
               }
 
               try {
-                // Pointing to localhost:5001
-               // Force the numerical IP address
-const url = isSignup 
-  ? 'http://127.0.0.1:5001/api/signup' 
-  : 'http://127.0.0.1:5001/api/login';
+                // Hits your backend on 5001
+                const url = isSignup ? 'http://localhost:5001/api/signup' : 'http://localhost:5001/api/login'
                 const body = isSignup ? { username, email, password } : { email, password }
 
                 const res = await fetch(url, {
@@ -86,23 +83,27 @@ const url = isSignup
                     alert('Signup successful. Please sign in.')
                     setIsSignup(false)
                   } else {
+                    // Successful login!
                     setSignedIn(true)
                   }
                 } else {
-                  alert(data.message || 'Something went wrong')
+                  alert(data.message || 'Authentication failed')
                 }
               } catch (error) {
-                alert('Could not connect to backend. Make sure your server is running on port 5001.')
+                alert('Could not connect to the Studio Backend. Check your terminal for Port 5001 errors.')
               }
             }}
-            className="w-full py-3 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 text-white font-semibold hover:opacity-90 transition"
+            className="w-full py-3 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 text-white font-semibold hover:opacity-90 transition active:scale-95"
           >
             {isSignup ? 'Sign Up' : 'Sign In'}
           </button>
 
           <p className="text-slate-500 text-sm">
             {isSignup ? 'Already have an account? ' : "Don't have an account? "}
-            <span className="text-purple-400 cursor-pointer hover:underline" onClick={() => setIsSignup(!isSignup)}>
+            <span
+              className="text-purple-400 cursor-pointer hover:underline font-medium"
+              onClick={() => setIsSignup(!isSignup)}
+            >
               {isSignup ? 'Sign in' : 'Sign up'}
             </span>
           </p>

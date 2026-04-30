@@ -1,4 +1,13 @@
-@import 'tailwindcss' source(none);
-@source '../**/*.{js,ts,jsx,tsx}';
+@import "tailwindcss";
 
-@import 'tw-animate-css';
+/* This tells Tailwind where to look for your class names in v4 */
+@source "../main.tsx";
+@source "../app/**/*.{ts,tsx}";
+
+/* This is how we define the theme in v4 without a separate config file */
+@theme {
+  --animate-spin-slow: spin 8s linear infinite;
+  
+  --color-studio-purple: #a855f7;
+  --color-studio-pink: #ec4899;
+}
