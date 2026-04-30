@@ -1,8 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { Button } from './ui/button';
 import { Card } from './ui/card';
-import { Play, Pause, Square, Volume2 } from 'lucide-react';
-import { Slider } from './ui/slider';
+import { Play, Pause, Square, X } from 'lucide-react'; // Added X for the close button
 import { Progress } from './ui/progress';
 import { AudioEngine, NOTE_FREQUENCIES } from './audio-engine';
 import { SavedComposition } from './music-library';
@@ -16,7 +15,6 @@ interface MusicPlayerProps {
 export function MusicPlayer({ composition, audioEngine, onClose }: MusicPlayerProps) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [progress, setProgress] = useState(0);
-  const [volume, setVolume] = useState(70);
   const [currentBeat, setCurrentBeat] = useState(0);
   
   const intervalRef = useRef<number | null>(null);
@@ -38,7 +36,7 @@ export function MusicPlayer({ composition, audioEngine, onClose }: MusicPlayerPr
       duration = Math.max(duration, lastNote.time + 1000);
     }
     
-    totalDurationRef.current = duration || 5000; // Default 5 seconds if no content
+    totalDurationRef.current = duration || 5000; 
   }, [composition]);
 
   const play = () => {
@@ -56,6 +54,7 @@ export function MusicPlayer({ composition, audioEngine, onClose }: MusicPlayerPr
           if (row[step]) {
             const instruments = ['kick', 'snare', 'hihat', 'clap'];
             const timeoutId = window.setTimeout(() => {
+              // Engine uses current master volume automatically
               audioEngine.playDrum(instruments[instrumentIndex]);
               setCurrentBeat(step);
             }, step * stepDuration);
@@ -88,12 +87,6 @@ export function MusicPlayer({ composition, audioEngine, onClose }: MusicPlayerPr
         stop();
       }
     }, 50);
-
-    // Auto-stop when complete
-    const stopTimeoutId = window.setTimeout(() => {
-      stop();
-    }, totalDurationRef.current);
-    timeoutsRef.current.push(stopTimeoutId);
   };
 
   const pause = () => {
@@ -119,9 +112,7 @@ export function MusicPlayer({ composition, audioEngine, onClose }: MusicPlayerPr
   };
 
   useEffect(() => {
-    return () => {
-      clearTimeouts();
-    };
+    return () => clearTimeouts();
   }, []);
 
   const formatDuration = (ms: number) => {
@@ -134,24 +125,34 @@ export function MusicPlayer({ composition, audioEngine, onClose }: MusicPlayerPr
   const currentTime = (progress / 100) * totalDurationRef.current;
 
   return (
-    <Card className="p-6 bg-gradient-to-br from-slate-900 to-slate-800 border-slate-700">
+    <Card className="p-6 bg-slate-900 border-slate-800 shadow-xl relative overflow-hidden">
+      {/* Background Gradient Accent */}
+      <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-purple-500 to-pink-500" />
+      
       <div className="space-y-6">
-        {/* Track Info */}
-        <div>
-          <h3 className="text-2xl font-bold text-white mb-2">{composition.name}</h3>
-          <div className="flex gap-3 text-sm text-slate-400">
-            <span>{composition.tempo} BPM</span>
-            {composition.beatPattern && <span>• Beat Pattern</span>}
-            {composition.pianoRecording && (
-              <span>• {composition.pianoRecording.length} Piano Notes</span>
-            )}
+        <div className="flex justify-between items-start">
+          <div>
+            <h3 className="text-xl font-bold text-white mb-1">{composition.name}</h3>
+            <div className="flex gap-3 text-[10px] font-mono text-slate-500 uppercase">
+              <span>{composition.tempo} BPM</span>
+              {composition.beatPattern && <span>• Percussion</span>}
+              {composition.pianoRecording && (
+                <span>• {composition.pianoRecording.length} MIDI Events</span>
+              )}
+            </div>
           </div>
+          
+          {onClose && (
+            <Button variant="ghost" size="icon" onClick={onClose} className="text-slate-500 hover:text-white -mt-2 -mr-2">
+              <X className="size-4" />
+            </Button>
+          )}
         </div>
 
         {/* Progress Bar */}
         <div className="space-y-2">
-          <Progress value={progress} className="h-2" />
-          <div className="flex justify-between text-xs text-slate-400">
+          <Progress value={progress} className="h-1.5 bg-slate-800" />
+          <div className="flex justify-between text-[10px] font-mono text-slate-500">
             <span>{formatDuration(currentTime)}</span>
             <span>{formatDuration(totalDurationRef.current)}</span>
           </div>
@@ -161,55 +162,39 @@ export function MusicPlayer({ composition, audioEngine, onClose }: MusicPlayerPr
         <div className="flex items-center justify-center gap-4">
           <Button
             onClick={stop}
-            variant="outline"
-            size="lg"
+            variant="ghost"
+            size="icon"
             disabled={!isPlaying && progress === 0}
-            className="rounded-full"
+            className="text-slate-400 hover:text-red-400"
           >
-            <Square className="size-6" />
+            <Square className="size-5" />
           </Button>
           
           <Button
             onClick={isPlaying ? pause : play}
-            size="lg"
-            className="rounded-full h-16 w-16 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
+            className="rounded-full h-14 w-14 bg-gradient-to-r from-purple-600 to-pink-600 hover:scale-105 transition-transform"
           >
             {isPlaying ? (
-              <Pause className="size-8" />
+              <Pause className="size-6" />
             ) : (
-              <Play className="size-8 ml-1" />
+              <Play className="size-6 ml-1" />
             )}
           </Button>
         </div>
 
-        {/* Volume Control */}
-        <div className="flex items-center gap-3">
-          <Volume2 className="size-5 text-slate-400" />
-          <Slider
-            value={[volume]}
-            onValueChange={(value) => setVolume(value[0])}
-            max={100}
-            step={1}
-            className="flex-1"
-          />
-          <span className="text-sm text-slate-400 w-12">{volume}%</span>
-        </div>
-
-        {/* Beat Indicator */}
+        {/* Beat Indicator (Condensed) */}
         {composition.beatPattern && isPlaying && (
-          <div className="bg-slate-950/50 rounded-lg p-4">
-            <div className="flex gap-1 justify-center">
-              {Array(composition.beatPattern[0]?.length || 16).fill(null).map((_, index) => (
-                <div
-                  key={index}
-                  className={`w-4 h-8 rounded transition-all ${
-                    index === currentBeat
-                      ? 'bg-gradient-to-t from-purple-500 to-pink-500'
-                      : 'bg-slate-800'
-                  }`}
-                />
-              ))}
-            </div>
+          <div className="flex gap-1 justify-center pt-2">
+            {Array(composition.beatPattern[0]?.length || 16).fill(null).map((_, index) => (
+              <div
+                key={index}
+                className={`w-2 h-4 rounded-sm transition-all duration-75 ${
+                  index === currentBeat
+                    ? 'bg-purple-500 shadow-[0_0_8px_rgba(168,85,247,0.6)]'
+                    : 'bg-slate-800'
+                }`}
+              />
+            ))}
           </div>
         )}
       </div>
