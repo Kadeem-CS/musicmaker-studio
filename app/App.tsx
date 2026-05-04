@@ -69,7 +69,7 @@ export default function App() {
       };
 
       // Hit your working 5001 backend
-      const response = await fetch('http://localhost:5001/api/playlists', {
+      const response = await fetch('http://localhost:5001/api/compositions',{
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(composition),
@@ -151,6 +151,24 @@ export default function App() {
                     className="bg-slate-950 border-slate-800"
                     onChange={(e) => setCompositionName(e.target.value)}
                   />
+
+                  <div className="flex gap-3">
+  <Button
+    type="button"
+    onClick={() => setVisibility('private')}
+    className={visibility === 'private' ? 'bg-purple-600' : 'bg-slate-700'}
+  >
+    Private
+  </Button>
+
+  <Button
+    type="button"
+    onClick={() => setVisibility('public')}
+    className={visibility === 'public' ? 'bg-purple-600' : 'bg-slate-700'}
+  >
+    Public
+  </Button>
+</div>
                   <Button onClick={saveComposition} className="w-full bg-purple-600 hover:bg-purple-700" disabled={!compositionName.trim()}>
                     Confirm Save
                   </Button>

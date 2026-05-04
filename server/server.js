@@ -10,6 +10,7 @@ const bcrypt = require("bcryptjs");
 const User = require("./models/User");
 const Track = require("./models/Track");
 const Playlist = require("./models/Playlist");
+const Composition = require("./models/Composition");
 
 // --- THE CRITICAL FIX ---
 // This tells Node: "Look at the folder I'm in, go up one, and find .env.local"
@@ -109,4 +110,59 @@ app.delete("/api/tracks/:id", async (req, res) => {
 // --- 7. START ---
 app.listen(PORT, () => {
   console.log(`🚀 STUDIO BACKEND LIVE AT: http://localhost:${PORT}`);
+});
+
+// --- COMPOSITION ROUTES ---
+app.get("/api/compositions", async (req, res) => {
+  try {
+    const { visibility } = req.query;
+
+    const filter = visibility ? { visibility } : {};
+    const compositions = await Composition.find(filter).sort({ createdAt: -1 });
+
+    res.json(compositions);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post("/api/compositions", async (req, res) => {
+  try {
+    const { title, visibility, beatPattern, pianoRecording, tempo } = req.body;
+
+    if (!title || !title.trim()) {
+      return res.status(400).json({ message: "Title is required" });
+    }
+
+    const composition = new Composition({
+      title: title.trim(),
+      visibility: visibility || "private",
+      beatPattern: beatPattern || [],
+      pianoRecording: pianoRecording || [],
+      tempo: tempo || 120,
+    });
+
+    await composition.save();
+
+    res.status(201).json({
+      message: "Composition saved!",
+      composition,
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.delete("/api/compositions/:id", async (req, res) => {
+  try {
+    const deleted = await Composition.findByIdAndDelete(req.params.id);
+
+    if (!deleted) {
+      return res.status(404).json({ message: "Composition not found" });
+    }
+
+    res.json({ message: "Composition deleted" });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 });
