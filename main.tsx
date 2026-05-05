@@ -59,40 +59,44 @@ function Root() {
           </div>
 
           <button
-            onClick={async () => {
-              if (!email || !password || (isSignup && !username)) {
-                alert('Please fill in all required fields')
-                return
-              }
+onClick={async () => {
+  if (!email || !password || (isSignup && !username)) {
+    alert('Please fill in all required fields')
+    return
+  }
 
-              try {
-                // Hits your backend on 5001
-                const url = isSignup ? 'http://localhost:5001/api/signup' : 'http://localhost:5001/api/login'
-                const body = isSignup ? { username, email, password } : { email, password }
+  try {
+    const url = isSignup 
+      ? 'https://musicmaker-studio.onrender.com/api/signup' 
+      : 'https://musicmaker-studio.onrender.com/api/login'
 
-                const res = await fetch(url, {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify(body),
-                })
+    const body = isSignup 
+      ? { username, email, password } 
+      : { email, password }
 
-                const data = await res.json()
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    })
 
-                if (res.ok) {
-                  if (isSignup) {
-                    alert('Signup successful. Please sign in.')
-                    setIsSignup(false)
-                  } else {
-                    // Successful login!
-                    setSignedIn(true)
-                  }
-                } else {
-                  alert(data.message || 'Authentication failed')
-                }
-              } catch (error) {
-                alert('Could not connect to the Studio Backend. Check your terminal for Port 5001 errors.')
-              }
-            }}
+    const data = await res.json()
+
+    if (res.ok) {
+      if (isSignup) {
+        alert('Signup successful. Please sign in.')
+        setIsSignup(false)
+      } else {
+        setSignedIn(true)
+      }
+    } else {
+      alert(data.message || 'Authentication failed')
+    }
+  } catch (error) {
+    console.error(error)
+    alert('Backend might be waking up. Try again in a few seconds.')
+  }
+}}
             className="w-full py-3 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 text-white font-semibold hover:opacity-90 transition active:scale-95"
           >
             {isSignup ? 'Sign Up' : 'Sign In'}

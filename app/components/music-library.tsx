@@ -6,6 +6,8 @@ import { Play, Trash2, Disc } from 'lucide-react';
 import { AudioEngine } from './audio-engine';
 import { MusicPlayer } from './music-player';
 
+const API_URL = 'https://musicmaker-studio.onrender.com';
+
 export interface SavedComposition {
   id: string;
   _id?: string;
@@ -29,7 +31,7 @@ interface MusicLibraryProps {
   onLoad?: (composition: SavedComposition) => void;
 }
 
-export function MusicLibrary({ audioEngine }: MusicLibraryProps) {
+export function MusicLibrary({ audioEngine, onLoad }: MusicLibraryProps) {
   const [compositions, setCompositions] = useState<SavedComposition[]>([]);
   const [uploadedTracks, setUploadedTracks] = useState<UploadedTrack[]>([]);
   const [playingComposition, setPlayingComposition] = useState<SavedComposition | null>(null);
@@ -41,40 +43,45 @@ export function MusicLibrary({ audioEngine }: MusicLibraryProps) {
 
   const loadCompositions = async () => {
     try {
-      const response = await fetch('http://127.0.0.1:5001/api/compositions');
+      const response = await fetch(`${API_URL}/api/compositions`);
 
-      if (response.ok) {
-        const data = await response.json();
-
-        const fixedData = data.map((comp: any) => ({
-          ...comp,
-          id: comp._id,
-        }));
-
-        setCompositions(fixedData);
+      if (!response.ok) {
+        throw new Error('Failed to load compositions');
       }
+
+      const data = await response.json();
+
+      const fixedData = data.map((comp: any) => ({
+        ...comp,
+        id: comp._id,
+      }));
+
+      setCompositions(fixedData);
     } catch (err) {
-      console.error("Could not load compositions from backend:", err);
+      console.error('Could not load compositions from backend:', err);
     }
   };
 
   const fetchUploadedTracks = async () => {
     try {
-      const response = await fetch('http://127.0.0.1:5001/api/tracks');
-      if (response.ok) {
-        const data = await response.json();
-        setUploadedTracks(data);
+      const response = await fetch(`${API_URL}/api/tracks`);
+
+      if (!response.ok) {
+        throw new Error('Failed to load tracks');
       }
+
+      const data = await response.json();
+      setUploadedTracks(data);
     } catch (err) {
-      console.error("Library sync failed: Backend might be offline.", err);
+      console.error('Library sync failed: Backend might be offline.', err);
     }
   };
 
   const deleteUploadedTrack = async (id: string) => {
-    if (!window.confirm("Permanently delete this track from the studio?")) return;
+    if (!window.confirm('Permanently delete this track from the studio?')) return;
 
     try {
-      const response = await fetch(`http://127.0.0.1:5001/api/tracks/${id}`, {
+      const response = await fetch(`${API_URL}/api/tracks/${id}`, {
         method: 'DELETE',
       });
 
@@ -82,7 +89,7 @@ export function MusicLibrary({ audioEngine }: MusicLibraryProps) {
         setUploadedTracks(prev => prev.filter(t => t._id !== id));
       }
     } catch (err) {
-      alert("Connection error: Could not reach the backend to delete.");
+      alert('Connection error: Could not reach the backend to delete.');
     }
   };
 
@@ -111,13 +118,26 @@ export function MusicLibrary({ audioEngine }: MusicLibraryProps) {
             </p>
           </div>
 
-          <Button
-            size="sm"
-            onClick={() => setPlayingComposition(comp)}
-            className="bg-purple-600 hover:bg-purple-700"
-          >
-            <Play className="size-3 mr-1" /> Listen
-          </Button>
+          <div className="flex gap-2">
+            {onLoad && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => onLoad(comp)}
+                className="border-slate-700 text-white hover:bg-slate-800"
+              >
+                Load
+              </Button>
+            )}
+
+            <Button
+              size="sm"
+              onClick={() => setPlayingComposition(comp)}
+              className="bg-purple-600 hover:bg-purple-700"
+            >
+              <Play className="size-3 mr-1" /> Listen
+            </Button>
+          </div>
         </div>
       </Card>
     ));

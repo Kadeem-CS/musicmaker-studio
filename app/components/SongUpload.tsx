@@ -15,7 +15,7 @@ export default function SongUpload() {
     formData.append('artist', 'Your Name'); 
 
     try {
-      const res = await fetch('http://localhost:5001/api/tracks/upload', {
+      const res = await fetch('https://musicmaker-studio.onrender.com', {
         method: 'POST',
         body: formData,
       });

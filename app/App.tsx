@@ -69,7 +69,7 @@ export default function App() {
       };
 
       // Hit your working 5001 backend
-      const response = await fetch('http://localhost:5001/api/compositions',{
+      const response = await fetch('https://musicmaker-studio.onrender.com/api/compositions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(composition),
