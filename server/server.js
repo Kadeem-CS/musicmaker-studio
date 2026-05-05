@@ -17,7 +17,7 @@ const Composition = require("./models/Composition");
 dotenv.config({ path: path.join(__dirname, '../.env.local') });
 
 const app = express();
-const PORT = 5001;
+const PORT = process.env.PORT || 5001;
 
 // --- 1. GLOBAL LOGGER ---
 app.use((req, res, next) => {
@@ -105,6 +105,11 @@ app.delete("/api/tracks/:id", async (req, res) => {
     if (!deletedTrack) return res.status(404).json({ message: "Track not found" });
     res.json({ message: "Track deleted successfully" });
   } catch (error) { res.status(500).json({ error: error.message }); }
+});
+
+// --- TEST ROUTE ---
+app.get("/", (req, res) => {
+  res.send("MusicMaker backend is running");
 });
 
 // --- 7. START ---

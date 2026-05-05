@@ -8,6 +8,7 @@ import { MusicPlayer } from './music-player';
 
 export interface SavedComposition {
   id: string;
+  _id?: string;
   title: string;
   visibility?: 'private' | 'public';
   beatPattern?: boolean[][];
@@ -38,9 +39,23 @@ export function MusicLibrary({ audioEngine }: MusicLibraryProps) {
     fetchUploadedTracks();
   }, []);
 
-  const loadCompositions = () => {
-    const saved = localStorage.getItem('musicCompositions');
-    if (saved) setCompositions(JSON.parse(saved));
+  const loadCompositions = async () => {
+    try {
+      const response = await fetch('http://127.0.0.1:5001/api/compositions');
+
+      if (response.ok) {
+        const data = await response.json();
+
+        const fixedData = data.map((comp: any) => ({
+          ...comp,
+          id: comp._id,
+        }));
+
+        setCompositions(fixedData);
+      }
+    } catch (err) {
+      console.error("Could not load compositions from backend:", err);
+    }
   };
 
   const fetchUploadedTracks = async () => {
